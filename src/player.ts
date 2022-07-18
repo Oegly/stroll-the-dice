@@ -5,8 +5,8 @@ import { Torch } from "./torch";
 export class Player {
   x: number;
   y: number;
-  dx: number = 0;
-  dy: number = 0;
+  vx: number = 0;
+  vy: number = 0;
   px: number = 0;
   py: number = 0;
   immunity: number = 5;
@@ -19,51 +19,19 @@ export class Player {
     this.y = y;
   }
 
-  /*act(inputs: string[], stage: Stage | null, dt: number) {
-    if (this.hp <= 0) {
-      return;
-    }
-    if (inputs.includes(' ')) {
-      console.log('space pressed');
-      stage?.placeBomb(this.id, this.x, this.y);
-    }
-
-    this.x += this.dx * dt / 1000;
-    this.y += this.dy * dt / 1000;
-    
-    this.dx = 0;
-    this.dy = 0;
-
-    // Check only inputs for movement. If there are several, give priority to the last.
-    const movement = inputs
-      .filter((i) => ['w', 'a', 's', 'd'].includes(i))
-      .slice(-1)[0];
-    
-    switch(movement) {
-      case 'w': this.dy = -this.speed; break;
-      case 's': this.dy = this.speed; break;
-      case 'a': this.dx = -this.speed; break;
-      case 'd': this.dx = this.speed; break;
-
-    }*/
-
-  move(inputs: Inputs, maze: Maze, torches: Torch[]) {
+  act(inputs: Inputs, maze: Maze, torches: Torch[]) {
     this.immunity = Math.max(0, this.immunity - 1);
     let changed = false;
 
-    if (this.dx || this.dy) {
+    if (this.vx || this.vy) {
       changed = true;
     }
 
-    this.x += this.dx;
-    this.y += this.dy;
+    this.x += this.vx;
+    this.y += this.vy;
 
-    this.dx = 0;
-    this.dy = 0;
-
-    if (inputs.pressed.includes(' ')) {
-      //this.handleTorch(torches);
-    }
+    this.vx = 0;
+    this.vy = 0;
 
     const movement = inputs.pressed
       .filter((i) => ['w', 'a', 's', 'd'].includes(i))
@@ -82,15 +50,14 @@ export class Player {
     if (maze.legalMove(this.x, this.y, angle)) {
       this.px = this.x;
       this.py = this.y;
-      this.dx = _a.x;
-      this.dy = _a.y;
+      this.vx = _a.x;
+      this.vy = _a.y;
       this.facingAngle = (angle + 2) % 4;
     }
   }
 
   rollDie(): number {
-    let roll = 1 + Math.floor(Math.random() * 6)
-    console.log('Player rolled %d to protect from mob.', roll, this.die);
+    let roll = 1 + Math.floor(Math.random() * 6);
 
     if (this.die.includes(roll)) {
       this.die = this.die.filter(n => n != roll);
@@ -100,7 +67,7 @@ export class Player {
       return roll;
     }
 
-    console.log('FAILED TO PROTECT AGAINST ATTACK WITH %d', roll)
+    console.log('Side %d is corrupted. Failed to protect against mob.', roll)
     return 0;
   }
 }

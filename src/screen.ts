@@ -1,5 +1,3 @@
-import './assets/dice.png';
-
 import { Maze, Point, Tile } from './maze';
 import { Mob } from './mob';
 import { Player } from './player';
@@ -205,8 +203,8 @@ class PlayerSprite {
   update(player: Player) {
     this.x = player.x;
     this.y = player.y;
-    this.dx = player.dx;
-    this.dy = player.dy;
+    this.dx = player.vx;
+    this.dy = player.vy;
     this.facingAngle = player.facingAngle;
   }
 

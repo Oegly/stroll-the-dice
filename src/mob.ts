@@ -5,16 +5,15 @@ import { Torch } from './torch';
 enum MobState {
   Strolling = 1,
   Hunting = 2,
-  Fleeing = 3,
+  Freezing = 3,
   Stunned = 4,
 };
 
 export class Mob {
-  id: number;
   x: number;
   y: number;
-  dx: number = 0;
-  dy: number = 0;
+  vx: number = 0;
+  vy: number = 0;
   state: MobState = MobState.Strolling;
   fear: number = 0;
   stun: number = 0;
@@ -27,17 +26,16 @@ export class Mob {
   }
 
   act(maze: Maze, player: Player, torches: Torch[]) {
-    this.x += this.dx;
-    this.y += this.dy;
-    this.dx = 0;
-    this.dy = 0;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vx = 0;
+    this.vy = 0;
 
     this.state = this.evaluate(maze, player, torches)
-    //console.log('State:', this.state);
     switch (this.state) {
       case MobState.Strolling: this.stroll(maze); break;
       case MobState.Hunting: this.hunt(player, maze); break;
-      case MobState.Fleeing: this.flee(maze); break;
+      case MobState.Freezing: this.freeze(); break;
       case MobState.Stunned: this.wakeUp(); break;
       default: break;
     }
@@ -58,8 +56,8 @@ export class Mob {
     }
 
     if (this.fear) {
-      //console.log('Fear: ', this.fear);
-      return MobState.Fleeing;
+      // This is spooky
+      return MobState.Freezing;
     }
 
     // If the mob is not fearing for its life, look for player
@@ -82,18 +80,18 @@ export class Mob {
 
     let angle = neighbors[Math.floor(Math.random() * neighbors.length)];
 
-    this.dx = ANGLES[angle].x;
-    this.dy = ANGLES[angle].y;
+    this.vx = ANGLES[angle].x;
+    this.vy = ANGLES[angle].y;
   }
 
   hunt(player: Player, maze: Maze) {
-    let dx = player.x - this.x;
-    let dy = player.y - this.y;
+    let vx = player.x - this.x;
+    let vy = player.y - this.y;
 
     let angle = [0, 1, 2, 3]
     .filter(a => {
-      let cx = (ANGLES[a].x && (ANGLES[a].x == Math.sign(dx)));
-      let cy = (ANGLES[a].y && (ANGLES[a].y == Math.sign(dy)));
+      let cx = (ANGLES[a].x && (ANGLES[a].x == Math.sign(vx)));
+      let cy = (ANGLES[a].y && (ANGLES[a].y == Math.sign(vy)));
 
       return cx || cy;
     })
@@ -102,15 +100,12 @@ export class Mob {
     })[0];
 
     if (angle != undefined) {
-      this.dx = ANGLES[angle].x;
-      this.dy = ANGLES[angle].y;
+      this.vx = ANGLES[angle].x;
+      this.vy = ANGLES[angle].y;
     }
   }
 
-  attack() {}
-
   setStun() {
-    //this.state == MobState.Stunned;
     this.stun = Math.min(this.stun + 5, 15);
   }
 
@@ -118,27 +113,7 @@ export class Mob {
     this.stun = Math.max(this.stun - 1, 0);
   }
 
-  flee(maze: Maze) {
+  freeze() {
     this.fear = Math.max(this.fear - 1, 0);
-    /*
-    let dx = this.x - this.nearestTorch.x;
-    let dy = this.y - this.nearestTorch.y;
-
-    let angle = [0, 1, 2, 3]
-    .filter(a => {
-      let cx = (ANGLES[a].x && (ANGLES[a].x == Math.sign(dx)));
-      let cy = (ANGLES[a].y && (ANGLES[a].y == Math.sign(dy)));
-
-      return cx || cy;
-    })
-    .filter(a => {
-      return maze.legalMove(this.x, this.y, a)
-    })[0];
-
-    console.log('Angle:', angle);
-    if (angle != undefined) {
-      this.dx = ANGLES[angle].x;
-      this.dy = ANGLES[angle].y;
-    }*/
   }
 }
