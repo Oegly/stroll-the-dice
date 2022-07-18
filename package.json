@@ -1,0 +1,38 @@
+{
+  "name": "stroll-the-dice",
+  "version": "1.0.0",
+  "description": "Stroll the Dice",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --mode=production --node-env=production",
+    "build:dev": "webpack --mode=development",
+    "build:prod": "webpack --mode=production --node-env=production",
+    "watch": "webpack --watch",
+    "serve": "webpack serve"
+  },
+  "author": "Eva Terrestrial",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.0.4",
+    "@types/webpack": "^5.28.0",
+    "@webpack-cli/generators": "^2.5.0",
+    "clean-webpack-plugin": "^4.0.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.6.0",
+    "declaration-bundler-webpack-plugin": "^1.0.3",
+    "html-webpack-plugin": "^5.5.0",
+    "mini-css-extract-plugin": "^2.5.3",
+    "style-loader": "^3.3.1",
+    "ts-loader": "^9.3.1",
+    "typescript": "^4.7.4",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.10.0",
+    "webpack-dev-server": "^4.9.3",
+    "wepack-cli": "^0.0.1-security",
+    "workbox-webpack-plugin": "^6.4.1"
+  },
+  "dependencies": {
+    "seedrandom": "^3.0.5"
+  }
+}
