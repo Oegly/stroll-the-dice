@@ -3,7 +3,6 @@ const seedRandom = require('seedrandom');
 const FPS = 60;
 const UPS = 5;
 
-
 import Inputs from './input';
 import { Maze, Point } from './maze';
 import { Mob } from './mob';

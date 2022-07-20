@@ -1,4 +1,4 @@
-import { Maze, Point, Tile } from './maze';
+import { ANGLES, Maze, Point, Tile } from './maze';
 import { Mob } from './mob';
 import { Player } from './player';
 import { Torch } from './torch';
@@ -26,6 +26,7 @@ export class Screen {
     this.fps = fps;
     this.player = new PlayerSprite(player);
     this.drawMaze(maze, goal);
+    [1, 2, 3, 4, 5, 6].forEach(n => this.drawDice(n, true));
   }
 
   render() {
@@ -53,8 +54,6 @@ export class Screen {
 
     console.log('Goal: ', goal);
     drawRect(goal.x, goal.y, BG_CTX, "#9f9");
-
-    [1, 2, 3, 4, 5, 6].forEach(n => this.drawDice(n, true));
   }
 
   drawPlayer() {
@@ -84,26 +83,7 @@ export class Screen {
     let flicker = 0.15 * Math.abs(0.5 - (this.frameCount % this.fps / this.fps));
 
     CTX.fillStyle = "#ff4"
-    this.torches.forEach(torch => {
-      let x = torch.x * CELL_SIZE;
-      let y = torch.y * CELL_SIZE;
-
-      CTX.fillRect(x + TILE_PADDING + 9, y + TILE_PADDING + 9, 18, 18);
-
-      CTX.save()
-
-      CTX.globalAlpha = 0.08;
-      CTX.beginPath();
-      CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * 2, 0, Math.PI * 2);
-      CTX.fill();
-
-      CTX.globalAlpha = 0.04;
-      CTX.beginPath();
-      CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * (2 + flicker), 0, Math.PI * 2);
-      CTX.fill();
-
-      CTX.restore();
-    });
+    this.torches.forEach(torch => torch.draw(flicker));
   }
 
   clear() {
@@ -146,46 +126,32 @@ const drawRect = (x: number, y: number, ctx: CanvasRenderingContext2D, color: st
   );
 };
 
-const drawBridge = [
-  (x: number, y: number, ctx: CanvasRenderingContext2D, color: string) => {
+const drawBridge = (x: number, y: number, angle: Point, ctx: CanvasRenderingContext2D, color: string) => {
     ctx.fillStyle = color;
+
+    // The offset within each cell depends on 
+    // a) If it's vertical (x=0, y=1 or -1) or horizontal (x=1 or -1, y=0)
+    // b) If it's at the start of the tile (x or y=-1) or the end (x or y=1)
+    let mx = (angle.x ? (angle.x < 0 ? 0 : CELL_SIZE) : TILE_PADDING);
+    let my = (angle.y ? (angle.y < 0 ? 0 : CELL_SIZE) : TILE_PADDING);
+
+    // Start or end of cell?
+    let sx = (Math.sign(angle.x) || 1);
+    let sy = (Math.sign(angle.y) || 1);
+
     ctx.fillRect(
-      x * CELL_SIZE + OFFSET_X + TILE_PADDING,
-      y * CELL_SIZE + OFFSET_Y - TILE_PADDING,
-      CELL_SIZE - TILE_PADDING,
-      TILE_PADDING * 2
+      x * CELL_SIZE + OFFSET_X + mx * sx,
+      y * CELL_SIZE + OFFSET_Y + my * sy,
+      
+      // Width and height according to horizontal / vertical
+      angle.x ? TILE_PADDING : CELL_SIZE - TILE_PADDING,
+      angle.y ? TILE_PADDING : CELL_SIZE - TILE_PADDING
     );
-  },
-  (x: number, y: number, ctx: CanvasRenderingContext2D, color: string) => {
-    ctx.fillStyle = color;
-    ctx.fillRect(
-      x * CELL_SIZE + OFFSET_X + CELL_SIZE - TILE_PADDING,
-      y * CELL_SIZE + OFFSET_Y + TILE_PADDING,
-      TILE_PADDING * 2,
-      CELL_SIZE - TILE_PADDING
-    );
-  },
-  (x: number, y: number, ctx: CanvasRenderingContext2D, color: string) => {
-    ctx.fillStyle = color;
-    ctx.fillRect(
-      x * CELL_SIZE + OFFSET_X + TILE_PADDING,
-      y * CELL_SIZE + OFFSET_Y + CELL_SIZE - TILE_PADDING,
-      CELL_SIZE - TILE_PADDING,
-      TILE_PADDING * 2);
-  },
-  (x: number, y: number, ctx: CanvasRenderingContext2D, color: string) => {
-    ctx.fillStyle = color;
-    ctx.fillRect(
-      x * CELL_SIZE + OFFSET_X - TILE_PADDING,
-      y * CELL_SIZE + OFFSET_Y + TILE_PADDING,
-      TILE_PADDING * 2,
-      CELL_SIZE - TILE_PADDING);
-  },
-];
+  };
 
 const drawTile = (tile: Tile, ctx: CanvasRenderingContext2D, color: string) => {
   drawRect(tile.x, tile.y, ctx, color);
-  drawBridge[tile.angle](tile.x, tile.y, ctx, color);
+  drawBridge(tile.x, tile.y, ANGLES[tile.angle], ctx, color);
 };
 
 class PlayerSprite {
@@ -227,6 +193,27 @@ class TorchSprite {
   update(x: number, y: number) {
     this.x = x;
     this.y = y;
+  }
+
+  draw(flicker: number) {
+    let x = this.x * CELL_SIZE;
+    let y = this.y * CELL_SIZE;
+
+    CTX.fillRect(x + TILE_PADDING + 9, y + TILE_PADDING + 9, 18, 18);
+
+    CTX.save()
+
+    CTX.globalAlpha = 0.08;
+    CTX.beginPath();
+    CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * 2, 0, Math.PI * 2);
+    CTX.fill();
+
+    CTX.globalAlpha = 0.04;
+    CTX.beginPath();
+    CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * (2 + flicker), 0, Math.PI * 2);
+    CTX.fill();
+
+    CTX.restore();
   }
 }
 
