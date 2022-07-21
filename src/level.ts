@@ -46,6 +46,7 @@ export class Level {
 
   update() {
     this.tickCount++;
+    this.inputs.update();
     this.player.act(this.inputs, this.maze, this.torches);
     this.mobs.forEach(m => m.act(this.maze, this.player, this.torches));
     this.screen.updateSprites(this.player, this.torches, this.mobs);

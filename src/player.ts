@@ -33,21 +33,17 @@ export class Player {
     this.vx = 0;
     this.vy = 0;
 
-    const movement = inputs.pressed
-      .filter((i) => ['w', 'a', 's', 'd'].includes(i))
-      .slice(-1)[0];
-    
-    let angle: number;
-    switch(movement) {
-      case 'w': angle = 0; break;
-      case 'd': angle = 1; break;
-      case 's': angle = 2; break;
-      case 'a': angle = 3; break;
-      default: return;
-    }
+    // Find angles corresponding to pressed keys, and check legality
+    // Checking multiple angles allows the player to move "diagonally"
+    let legalMoves = inputs.pressed
+    .filter((i) => ['w', 'a', 's', 'd'].includes(i))
+    .map(btn => keyToAngle[btn])
+    .filter(angle => maze.legalMove(this.x, this.y, angle));
 
-    let _a = ANGLES[angle];
-    if (maze.legalMove(this.x, this.y, angle)) {
+    if (legalMoves.length) {
+      // Last key in the list is the last one pressed
+      let angle = legalMoves[legalMoves.length - 1];
+      let _a = ANGLES[angle];
       this.px = this.x;
       this.py = this.y;
       this.vx = _a.x;
@@ -71,3 +67,10 @@ export class Player {
     return 0;
   }
 }
+
+const keyToAngle: {[key: string]: number} = {
+  'w': 0,
+  'd': 1,
+  's': 2,
+  'a': 3
+};
