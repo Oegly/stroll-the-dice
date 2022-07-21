@@ -61,7 +61,7 @@ export class Screen {
   }
 
   drawMobs() {
-    this.mobs.map(m => m.draw());
+    this.mobs.map(m => m.draw(1/this.fps));
   }
 
   drawDice(side: number, working: boolean) {
@@ -182,6 +182,31 @@ class PlayerSprite {
   }
 }
 
+class MobSprite {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+
+  constructor(mob: Mob) {
+    this.update(mob)
+  }
+
+  update(mob: Mob) {
+    this.x = mob.x;
+    this.y = mob.y;
+    this.dx = mob.vx;
+    this.dy = mob.vy;
+  }
+
+  draw(dt: number) {
+    this.x += this.dx * 5 * dt;
+    this.y += this.dy * 5 * dt;
+
+    drawRect(this.x, this.y, CTX, "#000");
+  }
+}
+
 class TorchSprite {
   x: number;
   y: number;
@@ -214,23 +239,5 @@ class TorchSprite {
     CTX.fill();
 
     CTX.restore();
-  }
-}
-
-class MobSprite {
-  x: number;
-  y: number;
-
-  constructor(mob: Mob) {
-    this.update(mob.x, mob.y)
-  }
-
-  update(x: number, y: number) {
-    this.x = x;
-    this.y = y;
-  }
-
-  draw() {
-    drawRect(this.x, this.y, CTX, "#000");
   }
 }
