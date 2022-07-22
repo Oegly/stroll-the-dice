@@ -187,6 +187,8 @@ class MobSprite {
   y: number;
   dx: number;
   dy: number;
+  fear: number;
+  stun: number;
 
   constructor(mob: Mob) {
     this.update(mob)
@@ -197,13 +199,20 @@ class MobSprite {
     this.y = mob.y;
     this.dx = mob.vx;
     this.dy = mob.vy;
+    this.fear = mob.fear;
+    this.stun = mob.stun;
   }
 
   draw(dt: number) {
+    CTX.globalAlpha = 1 / this.stun;
     this.x += this.dx * 5 * dt;
     this.y += this.dy * 5 * dt;
+    this.fear = Math.max(this.fear - dt, 0);
+    this.stun = Math.max(this.stun - dt, 0);
 
-    drawRect(this.x, this.y, CTX, "#000");
+    let green = (Math.round(this.fear * 10)).toString(16).padStart(2, "0");
+    drawRect(this.x, this.y, CTX, "#00" + green + "00");
+    CTX.globalAlpha = 1;
   }
 }
 
