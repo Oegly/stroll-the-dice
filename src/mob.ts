@@ -1,4 +1,4 @@
-import { Maze, Tile, Point, manhattan, ANGLES } from './maze';
+import { Maze, Tile, Point, euclid, ANGLES } from './maze';
 import { Player } from './player';
 import { Torch } from './torch';
 
@@ -48,10 +48,10 @@ export class Mob {
     };
 
     this.nearestTorch = torches.sort((a: Point, b: Point): number => {
-      return manhattan(this, a) - manhattan(this, b);
+      return euclid(this, a) - euclid(this, b);
     })[0];
 
-    if (this.nearestTorch && manhattan(this, this.nearestTorch) < 4) {
+    if (this.nearestTorch && euclid(this, this.nearestTorch) < 2) {
       this.fear = Math.min(this.fear + 5, 15);
     }
 
@@ -61,7 +61,8 @@ export class Mob {
     }
 
     // If the mob is not fearing for its life, look for player
-    if (manhattan(this, player) < 6) {
+    if (euclid(this, player) < 4) {
+      console.log(euclid(this, player))
       return MobState.Hunting;
     }
 
