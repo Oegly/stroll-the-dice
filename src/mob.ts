@@ -1,11 +1,11 @@
-import { Maze, Tile, Point, manhattan, ANGLES } from './maze';
+import { Maze, Tile, Point, euclid, ANGLES } from './maze';
 import { Player } from './player';
 import { Torch } from './torch';
 
 enum MobState {
   Strolling = 1,
   Hunting = 2,
-  Freezing = 3,
+  Fleeing = 3,
   Stunned = 4,
 };
 
@@ -35,7 +35,7 @@ export class Mob {
     switch (this.state) {
       case MobState.Strolling: this.stroll(maze); break;
       case MobState.Hunting: this.hunt(player, maze); break;
-      case MobState.Freezing: this.freeze(); break;
+      case MobState.Fleeing: this.flee(maze); break;
       case MobState.Stunned: this.wakeUp(); break;
       default: break;
     }
@@ -48,20 +48,21 @@ export class Mob {
     };
 
     this.nearestTorch = torches.sort((a: Point, b: Point): number => {
-      return manhattan(this, a) - manhattan(this, b);
+      return euclid(this, a) - euclid(this, b);
     })[0];
 
-    if (this.nearestTorch && manhattan(this, this.nearestTorch) < 4) {
+    if (this.nearestTorch && euclid(this, this.nearestTorch) < 2) {
       this.fear = Math.min(this.fear + 5, 15);
     }
 
     if (this.fear) {
       // This is spooky
-      return MobState.Freezing;
+      return MobState.Fleeing;
     }
 
     // If the mob is not fearing for its life, look for player
-    if (manhattan(this, player) < 6) {
+    if (euclid(this, player) < 4) {
+      console.log(euclid(this, player))
       return MobState.Hunting;
     }
 
@@ -113,7 +114,30 @@ export class Mob {
     this.stun = Math.max(this.stun - 1, 0);
   }
 
-  freeze() {
+  flee(maze: Maze) {
     this.fear = Math.max(this.fear - 1, 0);
+
+    if (this.nearestTorch == null) {
+      return;
+    }
+
+    let dx = this.nearestTorch.x - this.x;
+    let dy = this.nearestTorch.y - this.y;
+
+    let angle = [0, 1, 2, 3]
+    .filter(a => {
+      let cx = (ANGLES[a].x && (ANGLES[a].x != Math.sign(dx)));
+      let cy = (ANGLES[a].y && (ANGLES[a].y != Math.sign(dy)));
+
+      return cx || cy;
+    })
+    .filter(a => {
+      return maze.legalMove(this.x, this.y, a)
+    })[0];
+
+    if (angle != undefined) {
+      this.vx = ANGLES[angle].x;
+      this.vy = ANGLES[angle].y;
+    }
   }
 }
