@@ -1,4 +1,5 @@
-import { Maze, Tile, Point, euclid, ANGLES } from './maze';
+import { Maze, Tile, Point, ANGLES } from './maze';
+import { a_star, PathNode, euclid, manhattan } from './path';
 import { Player } from './player';
 import { Torch } from './torch';
 
@@ -19,6 +20,7 @@ export class Mob {
   stun: number = 0;
   nearestTorch: Torch | null = null;
   screeching: boolean = false;
+  path: PathNode | undefined;
 
   constructor(x: number, y: number) {
     this.x = x;
@@ -61,12 +63,13 @@ export class Mob {
     }
 
     // If the mob is not fearing for its life, look for player
-    if (euclid(this, player) < 4) {
+    if (this.path || euclid(this, player) < 4) {
       console.log(euclid(this, player))
       return MobState.Hunting;
     }
 
     // Nothing exciting is going on
+    this.path = undefined;
     return MobState.Strolling;
   }
 
@@ -86,23 +89,24 @@ export class Mob {
   }
 
   hunt(player: Player, maze: Maze) {
-    let vx = player.x - this.x;
-    let vy = player.y - this.y;
+    // Calculate path if there is none. Recalculate if not in it.
+    if (!this.path || manhattan(this, this.path.point) > 1) {
+      if (euclid(this, player) > 4) {
+        this.path = undefined;
+        return;
+      }
 
-    let angle = [0, 1, 2, 3]
-    .filter(a => {
-      let cx = (ANGLES[a].x && (ANGLES[a].x == Math.sign(vx)));
-      let cy = (ANGLES[a].y && (ANGLES[a].y == Math.sign(vy)));
+      this.path = a_star(
+        maze, {x: this.x, y: this.y}, {x: player.x, y: player.y}
+      )?.parent;
+    }
 
-      return cx || cy;
-    })
-    .filter(a => {
-      return maze.legalMove(this.x, this.y, a)
-    })[0];
+    if (this.path && this.path.cost) {
+      console.log(this.path);
+      this.vx = this.path.point.x - this.x;
+      this.vy = this.path.point.y - this.y;
 
-    if (angle != undefined) {
-      this.vx = ANGLES[angle].x;
-      this.vy = ANGLES[angle].y;
+      this.path = this.path?.parent
     }
   }
 

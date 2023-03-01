@@ -16,14 +16,6 @@ const choice = (lst: any[], rng: () => number): number => {
   return lst[Math.floor(rng() * lst.length)];
 };
 
-export const euclid = (a: Point, b: Point) => {
-  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
-};
-
-export const manhattan = (a: Point, b: Point): number => {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-};
-
 export class Tile {
   x: number;
   y: number;

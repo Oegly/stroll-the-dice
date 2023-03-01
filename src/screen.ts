@@ -1,6 +1,7 @@
 import { ANGLES, Maze, Point, Tile } from './maze';
 import { Mob } from './mob';
 import { Player } from './player';
+import { PathNode } from './path';
 import { Torch } from './torch';
 
 const BG_CTX = (<HTMLCanvasElement> document.getElementById('background')).getContext('2d') 
@@ -189,6 +190,7 @@ class MobSprite {
   dy: number;
   fear: number;
   stun: number;
+  path: PathNode | undefined;
 
   constructor(mob: Mob) {
     this.update(mob)
@@ -201,6 +203,7 @@ class MobSprite {
     this.dy = mob.vy;
     this.fear = mob.fear;
     this.stun = mob.stun;
+    this.path = mob.path;
   }
 
   draw(dt: number) {
@@ -213,6 +216,10 @@ class MobSprite {
     let green = (Math.round(this.fear * 10)).toString(16).padStart(2, "0");
     drawRect(this.x, this.y, CTX, "#00" + green + "00");
     CTX.globalAlpha = 1;
+
+    if (this.path) {
+      drawPath(this.path);
+    }
   }
 }
 
@@ -249,4 +256,14 @@ class TorchSprite {
 
     CTX.restore();
   }
+}
+
+export const drawPath = (node: PathNode) => {
+  while (node) {
+    CTX.globalAlpha = 0.8 / node.cost + 0.2;
+    drawRect(node.point.x, node.point.y, CTX, "#449944")
+    node = node.parent;
+  }
+
+  CTX.globalAlpha = 1;
 }
