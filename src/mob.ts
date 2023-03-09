@@ -1,5 +1,5 @@
 import { Maze, Tile, Point, ANGLES } from './maze';
-import { a_star, PathNode, euclid, manhattan } from './path';
+import { a_star, escape, PathNode, euclid, manhattan } from './path';
 import { Player } from './player';
 import { Torch } from './torch';
 
@@ -37,10 +37,23 @@ export class Mob {
     switch (this.state) {
       case MobState.Strolling: this.stroll(maze); break;
       case MobState.Hunting: this.hunt(player, maze); break;
-      case MobState.Fleeing: this.flee(maze); break;
+      case MobState.Fleeing: this.flee(); break;
       case MobState.Stunned: this.wakeUp(); break;
       default: break;
     }
+  }
+
+  followPath() {
+    if (!(this.path && manhattan(this, this.path.point) == 1)) {
+      return false;
+    }
+
+    this.vx = this.path.point.x - this.x;
+    this.vy = this.path.point.y - this.y;
+
+    this.path = this.path?.parent;
+
+    return true;
   }
 
   evaluate(maze: Maze, player: Player, torches: Torch[]) {
@@ -54,11 +67,12 @@ export class Mob {
     })[0];
 
     if (this.nearestTorch && euclid(this, this.nearestTorch) < 2) {
+      this.path = escape(maze, {x: this.x, y: this.y}, this.nearestTorch)?.parent;
+      console.log(this.path);
       this.fear = Math.min(this.fear + 5, 15);
     }
 
     if (this.fear) {
-      // This is spooky
       return MobState.Fleeing;
     }
 
@@ -89,24 +103,13 @@ export class Mob {
   }
 
   hunt(player: Player, maze: Maze) {
-    // Calculate path if there is none. Recalculate if not in it.
-    if (!this.path || manhattan(this, this.path.point) > 1) {
-      if (euclid(this, player) > 4) {
-        this.path = undefined;
-        return;
-      }
-
+    // Try to follow path, recalculate if not possible
+    if (!this.followPath()) {
       this.path = a_star(
-        maze, {x: this.x, y: this.y}, {x: player.x, y: player.y}
+        maze, {x: this.x, y: this.y}, {x: player.x, y: player.y}, 5
       )?.parent;
-    }
 
-    if (this.path && this.path.cost) {
-      console.log(this.path);
-      this.vx = this.path.point.x - this.x;
-      this.vy = this.path.point.y - this.y;
-
-      this.path = this.path?.parent
+      this.followPath();
     }
   }
 
@@ -118,30 +121,8 @@ export class Mob {
     this.stun = Math.max(this.stun - 1, 0);
   }
 
-  flee(maze: Maze) {
+  flee() {
     this.fear = Math.max(this.fear - 1, 0);
-
-    if (this.nearestTorch == null) {
-      return;
-    }
-
-    let dx = this.nearestTorch.x - this.x;
-    let dy = this.nearestTorch.y - this.y;
-
-    let angle = [0, 1, 2, 3]
-    .filter(a => {
-      let cx = (ANGLES[a].x && (ANGLES[a].x != Math.sign(dx)));
-      let cy = (ANGLES[a].y && (ANGLES[a].y != Math.sign(dy)));
-
-      return cx || cy;
-    })
-    .filter(a => {
-      return maze.legalMove(this.x, this.y, a)
-    })[0];
-
-    if (angle != undefined) {
-      this.vx = ANGLES[angle].x;
-      this.vy = ANGLES[angle].y;
-    }
+    this.followPath();
   }
 }

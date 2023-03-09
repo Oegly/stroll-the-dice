@@ -1,5 +1,6 @@
 import { drawPath } from './screen';
 import { Maze, Tile, Point, ANGLES } from './maze';
+import { stat } from 'fs';
 
 export const euclid = (a: Point, b: Point) => {
   return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
@@ -95,46 +96,100 @@ export class PriorityQueue<T> {
   }
 }
 
-export const dijkstra = (maze: Maze, start: Point, end: Point) => {
+export const dijkstra = (maze: Maze, start: Point, end: Point, fov: number = 0) => {
   return pathFinding(maze, start, end, () => 0);
 };
 
-export const a_star = (maze: Maze, start: Point, end: Point) => {
-  const h = (start: Point, end: Point) => {
-    return euclid(start, end);
-  };
-
-  return pathFinding(maze, start, end, h);
+export const a_star = (maze: Maze, start: Point, end: Point, fov: number = 0) => {
+  return pathFinding(maze, start, end, euclid, fov);
 };
 
+const legal = (maze: Maze, a: number, node: Point, end: Point, fov: number) => {
+  // Check if the node is close enough, or disregard if fov is 0
+  let proximity = !fov || euclid(node, end) < fov;
+  return proximity && maze.legalMove(node.x, node.y, a);
+}
+
 export const pathFinding = (
-    maze: Maze, start: Point, end: Point, h: (start: Point, end: Point) => number
+    maze: Maze,
+    start: Point,
+    end: Point,
+    h: (start: Point, end: Point) => number,
+    fov: number = 0
   ): PathNode | undefined => {
   let queue = new PriorityQueue<PathNode>();
-  queue.insert(0, new PathNode(start, 0, undefined))
+  let startNode = new PathNode(start, 0, undefined);
+  queue.insert(0, startNode);
 
+  let min = startNode;
   while(!queue.empty()) {
     let node = queue.pop();
-    let x = node!.point.x;
-    let y = node!.point.y;
+    let x = node.point.x;
+    let y = node.point.y;
 
     if (x == end.x && y == end.y) {
       //console.log("End of Pathfinding:", node);
       return node.reverse();
     }
 
-    [0, 1, 2, 3].filter(a => maze.legalMove(x, y, a)).forEach(a => {
+    [0, 1, 2, 3].filter(a => legal(maze, a, node.point, end, fov)).forEach(a => {
       let neighbor = {x: x + ANGLES[a].x, y: y + ANGLES[a].y};
       let new_cost = node!.cost + 1;
 
-      let search_result = node!.find(neighbor);
+      let search_result = node.find(neighbor);
       if (!search_result || new_cost < search_result.cost) {
         let p = new PathNode(neighbor, new_cost, node);
-        //drawPath(p);
         queue.insert(new_cost + h(neighbor, end), p);
+
+        // Keep track of the node closest to the end
+        if (!min || euclid(p.point, end) < euclid(min.point, end)) {
+          min = p;
+        }
       }
     });
   }
 
-  return undefined;
-}
+  // If end is not found, return closest
+  return min.reverse();
+};
+
+// TODO: See if both pathfinding functions can be sensibly combined
+export const escape = (
+  maze: Maze,
+  start: Point,
+  source: Point,
+  fov: number = 4
+) => {
+  let queue = new PriorityQueue<PathNode>(sortDesc);
+  let startNode = new PathNode(start, 0, undefined);
+  queue.insert(0, startNode);
+
+  let max = startNode;
+  while (!queue.empty()) {
+    let node = queue.pop();
+    let x = node.point.x;
+    let y = node.point.y;
+
+    [0, 1, 2, 3].filter(a => legal(maze, a, node.point, source, fov)).forEach(a => {
+      let neighbor = {x: x + ANGLES[a].x, y: y + ANGLES[a].y};
+      let new_cost = node!.cost + 1;
+
+      if (euclid(node.point, source) >= fov) {
+        return node.reverse();
+      }
+
+      let search_result = node.find(neighbor);
+      if (!search_result || new_cost < search_result.cost) {
+        let p = new PathNode(neighbor, new_cost, node);
+        queue.insert(new_cost + euclid(neighbor, source), p);
+
+        // Keep track of the node closest to the end
+        if (!max || euclid(p.point, source) > euclid(max.point, source)) {
+          max = p;
+        }
+      }
+    });
+  }
+
+  return max.reverse();
+};

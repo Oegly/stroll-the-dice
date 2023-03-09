@@ -1,7 +1,7 @@
 import { ANGLES, Maze, Point, Tile } from './maze';
 import { Mob } from './mob';
 import { Player } from './player';
-import { PathNode } from './path';
+import { a_star, PathNode } from './path';
 import { Torch } from './torch';
 
 const BG_CTX = (<HTMLCanvasElement> document.getElementById('background')).getContext('2d') 
@@ -22,19 +22,25 @@ export class Screen {
   player: PlayerSprite;
   torches: TorchSprite[] = [];
   mobs: MobSprite[] = [];
+  path: PathNode;
 
   constructor(player: Player, maze: Maze, goal: Point, fps: number) {
     this.fps = fps;
     this.player = new PlayerSprite(player);
     this.drawMaze(maze, goal);
     [1, 2, 3, 4, 5, 6].forEach(n => this.drawDice(n, true));
+
+    this.path = a_star(maze, {x: 0, y: 0}, goal).reverse()
   }
 
   render() {
     this.frameCount++;
 
     this.clear();
+    // Used for examining mazes
+    drawPath(this.path);
     this.drawPlayer();
+    this.drawMobs();
     this.drawTorches();
   }
   

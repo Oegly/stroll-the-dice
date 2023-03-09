@@ -102,9 +102,6 @@ export class Level {
   }
 
   render() {
-    this.screen.clear();
-    this.screen.drawPlayer();
-    this.screen.drawMobs();
-    this.screen.drawTorches();
+    this.screen.render();
   }
 }
