@@ -36,7 +36,7 @@ export class Mob {
     this.state = this.evaluate(maze, player, torches)
     switch (this.state) {
       case MobState.Strolling: this.stroll(maze); break;
-      case MobState.Hunting: this.hunt(player, maze); break;
+      case MobState.Hunting: this.hunt(player, maze, torches); break;
       case MobState.Fleeing: this.flee(); break;
       case MobState.Stunned: this.wakeUp(); break;
       default: break;
@@ -66,9 +66,9 @@ export class Mob {
       return euclid(this, a) - euclid(this, b);
     })[0];
 
-    if (this.nearestTorch && euclid(this, this.nearestTorch) < 2) {
-      this.path = escape(maze, {x: this.x, y: this.y}, this.nearestTorch)?.parent;
-      console.log(this.path);
+    if (this.nearestTorch && euclid(this, this.nearestTorch) <= 2) {
+      const unsafe = [...torches.map(t => t.tiles(2))].flat();
+      this.path = escape(maze, {x: this.x, y: this.y}, this.nearestTorch, 5, unsafe)?.parent;
       this.fear = Math.min(this.fear + 5, 15);
     }
 
@@ -78,7 +78,6 @@ export class Mob {
 
     // If the mob is not fearing for its life, look for player
     if (this.path || euclid(this, player) < 4) {
-      console.log(euclid(this, player))
       return MobState.Hunting;
     }
 
@@ -102,11 +101,14 @@ export class Mob {
     this.vy = ANGLES[angle].y;
   }
 
-  hunt(player: Player, maze: Maze) {
+  hunt(player: Player, maze: Maze, torches: Torch[]) {
     // Try to follow path, recalculate if not possible
+    const unsafe = [...torches.map(t => t.tiles(2))].flat();
+    //console.log(unsafe);
+
     if (!this.followPath()) {
       this.path = a_star(
-        maze, {x: this.x, y: this.y}, {x: player.x, y: player.y}, 5
+        maze, {x: this.x, y: this.y}, {x: player.x, y: player.y}, 5, unsafe
       )?.parent;
 
       this.followPath();

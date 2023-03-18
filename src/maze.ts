@@ -153,6 +153,11 @@ export class Maze {
     return target.angle == (angle + 2) % 4 || home.angle == angle;
   }
 
+  legalNeighbors(x: number, y: number) {
+    return [0, 1, 2, 3]
+    .filter(a => this.legalMove(x, y, a))
+    .map(a => this.findTile(x + ANGLES[a].x, y + ANGLES[a].y));
+  }
   /*tilesInCircle(x: number, y: number, r: number): Tile[] {
     let ret: Tile[] = [];
 

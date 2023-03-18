@@ -232,14 +232,16 @@ class MobSprite {
 class TorchSprite {
   x: number;
   y: number;
+  tiles: Point[];
 
   constructor(torch: Torch) {
-    this.update(torch.x, torch.y)
+    this.update(torch.x, torch.y, torch.tiles(2))
   }
 
-  update(x: number, y: number) {
+  update(x: number, y: number, tiles: Point[]) {
     this.x = x;
     this.y = y;
+    this.tiles = tiles;
   }
 
   draw(flicker: number) {
@@ -254,6 +256,8 @@ class TorchSprite {
     CTX.beginPath();
     CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * 2, 0, Math.PI * 2);
     CTX.fill();
+
+    this.tiles.forEach(t => drawRect(t.x, t.y, CTX, "ff4"))
 
     CTX.globalAlpha = 0.04;
     CTX.beginPath();

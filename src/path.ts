@@ -1,6 +1,4 @@
-import { drawPath } from './screen';
 import { Maze, Tile, Point, ANGLES } from './maze';
-import { stat } from 'fs';
 
 export const euclid = (a: Point, b: Point) => {
   return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
@@ -100,14 +98,16 @@ export const dijkstra = (maze: Maze, start: Point, end: Point, fov: number = 0) 
   return pathFinding(maze, start, end, () => 0);
 };
 
-export const a_star = (maze: Maze, start: Point, end: Point, fov: number = 0) => {
-  return pathFinding(maze, start, end, euclid, fov);
+export const a_star = (maze: Maze, start: Point, end: Point, fov: number = 0, unsafe: Point[] = []) => {
+  return pathFinding(maze, start, end, euclid, fov, unsafe);
 };
 
-const legal = (maze: Maze, a: number, node: Point, end: Point, fov: number) => {
+const legal = (maze: Maze, node: Point, end: Point, fov: number, unsafe: Point[]) => {
   // Check if the node is close enough, or disregard if fov is 0
   let proximity = !fov || euclid(node, end) < fov;
-  return proximity && maze.legalMove(node.x, node.y, a);
+  unsafe = unsafe.filter(u => u.x == node.x && u.y == node.y);
+
+  return proximity && !unsafe.length;
 }
 
 export const pathFinding = (
@@ -115,7 +115,8 @@ export const pathFinding = (
     start: Point,
     end: Point,
     h: (start: Point, end: Point) => number,
-    fov: number = 0
+    fov: number = 0,
+    unsafe: Point[] = [],
   ): PathNode | undefined => {
   let queue = new PriorityQueue<PathNode>();
   let startNode = new PathNode(start, 0, undefined);
@@ -132,8 +133,9 @@ export const pathFinding = (
       return node.reverse();
     }
 
-    [0, 1, 2, 3].filter(a => legal(maze, a, node.point, end, fov)).forEach(a => {
-      let neighbor = {x: x + ANGLES[a].x, y: y + ANGLES[a].y};
+    maze.legalNeighbors(x, y)
+    .filter(next => legal(maze, next, end, fov, unsafe))
+    .forEach(neighbor => {
       let new_cost = node!.cost + 1;
 
       let search_result = node.find(neighbor);
@@ -158,7 +160,8 @@ export const escape = (
   maze: Maze,
   start: Point,
   source: Point,
-  fov: number = 4
+  fov: number = 4,
+  unsafe: Point[] = [],
 ) => {
   let queue = new PriorityQueue<PathNode>(sortDesc);
   let startNode = new PathNode(start, 0, undefined);
@@ -170,8 +173,10 @@ export const escape = (
     let x = node.point.x;
     let y = node.point.y;
 
-    [0, 1, 2, 3].filter(a => legal(maze, a, node.point, source, fov)).forEach(a => {
-      let neighbor = {x: x + ANGLES[a].x, y: y + ANGLES[a].y};
+    maze.legalNeighbors(x, y)
+    .filter(next => legal(maze, next, source, fov, []))
+    .forEach(neighbor => {
+      //let neighbor = {x: x + ANGLES[a].x, y: y + ANGLES[a].y};
       let new_cost = node!.cost + 1;
 
       if (euclid(node.point, source) >= fov) {
