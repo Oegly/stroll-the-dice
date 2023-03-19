@@ -38,7 +38,7 @@ export class Screen {
 
     this.clear();
     // Used for examining mazes
-    drawPath(this.path);
+    //drawPath(this.path);
     this.drawPlayer();
     this.drawMobs();
     this.drawTorches();
@@ -223,9 +223,9 @@ class MobSprite {
     drawRect(this.x, this.y, CTX, "#00" + green + "00");
     CTX.globalAlpha = 1;
 
-    if (this.path) {
+    /*if (this.path) {
       drawPath(this.path);
-    }
+    }*/
   }
 }
 
@@ -257,7 +257,7 @@ class TorchSprite {
     CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * 2, 0, Math.PI * 2);
     CTX.fill();
 
-    this.tiles.forEach(t => drawRect(t.x, t.y, CTX, "ff4"))
+    //this.tiles.forEach(t => drawRect(t.x, t.y, CTX, "ff4"))
 
     CTX.globalAlpha = 0.04;
     CTX.beginPath();

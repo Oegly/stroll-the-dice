@@ -27,15 +27,15 @@ export class Tile {
     this.angle = angle;
   }
 
-  getNeighbor(angle: number) {
+  getNeighbor(angle: number): Point {
     return {'x': this.x + ANGLES[angle].x, 'y': this.y + ANGLES[angle].y};
   }
 
-  get parent() {
+  get parent(): Point {
     return this.getNeighbor(this.angle);
   }
 
-  get parentAngle() {
+  get parentAngle(): number {
     return (this.angle + 2) % 4;
   }
 }
@@ -88,7 +88,7 @@ export class Maze {
     let d = [];
 
     for (let i = 0; i < 4; i++) {
-      if (this.legalPath(x, y, i)) {
+      if (this.freeTile(x, y, i)) {
 	      d.push(i);
       }
     }
@@ -96,18 +96,15 @@ export class Maze {
     if(d.length > 0) {
       let angle = choice(d, this.rng);
       let _w = tile.getNeighbor(angle);
-      //console.log(tile, _w);
       this.pushTile(new Tile(_w.x, _w.y, (angle + 2) % 4));
       return;
     }
 
-    //console.log("No tile can be legally extended from " + x + "," + y + ".");
     this.backtrace(tile);
   }
 
   backtrace(tile: Tile) {
     if (tile.x == this.start.x  && tile.y == this.start.x) {
-      console.log("We're back to start.");
       this.done = true;
       console.log(this.seed);
       return;
@@ -125,25 +122,21 @@ export class Maze {
     return this.grid[x][y];
   }
 
-  legalPoint(x: number, y: number) {
+  withinBounds(x: number, y: number) {
     return x >= 0 && x < this.width && y >= 0 && y < this.height;
   }
 
-  freePoint(x: number, y: number) {
-    return this.grid[x][y] == undefined;
-  }
-
-  legalPath(x: number, y: number, angle: number) {
+  freeTile(x: number, y: number, angle: number) {
     let _x = x + ANGLES[angle].x;
     let _y = y + ANGLES[angle].y;
 
-    return this.legalPoint(_x, _y) && this.freePoint(_x, _y);
+    return this.withinBounds(_x, _y) && !this.findTile(_x, _y);
   }
 
   legalMove(x: number, y: number, angle: number) {
     let _a = ANGLES[angle];
 
-    if (!this.legalPoint(x + _a.x, y + _a.y)) {
+    if (!this.withinBounds(x + _a.x, y + _a.y)) {
       return false;
     }
 
@@ -158,9 +151,4 @@ export class Maze {
     .filter(a => this.legalMove(x, y, a))
     .map(a => this.findTile(x + ANGLES[a].x, y + ANGLES[a].y));
   }
-  /*tilesInCircle(x: number, y: number, r: number): Tile[] {
-    let ret: Tile[] = [];
-
-    return ret;
-  }*/
 }

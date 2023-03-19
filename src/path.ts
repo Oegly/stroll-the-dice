@@ -72,17 +72,13 @@ export class PriorityQueue<T> {
     this.sort = sort;
   }
 
-  insert(priority: number, data: T) {
+  push(priority: number, data: T) {
     if (!this.queue) {
       return;
     }
     this.queue.push([priority, data]);
     this.queue = this.queue.sort((a, b) => this.sort(a[0], b[0]));
   }
-
-  /*find(data: T): T | undefined {
-    return this.queue.indexOf(d: [number, T] => d[1] = data);
-  }*/
 
   pop(): T | undefined {
     let ret = this.queue.pop()
@@ -120,7 +116,7 @@ export const pathFinding = (
   ): PathNode | undefined => {
   let queue = new PriorityQueue<PathNode>();
   let startNode = new PathNode(start, 0, undefined);
-  queue.insert(0, startNode);
+  queue.push(0, startNode);
 
   let min = startNode;
   while(!queue.empty()) {
@@ -141,7 +137,7 @@ export const pathFinding = (
       let search_result = node.find(neighbor);
       if (!search_result || new_cost < search_result.cost) {
         let p = new PathNode(neighbor, new_cost, node);
-        queue.insert(new_cost + h(neighbor, end), p);
+        queue.push(new_cost + h(neighbor, end), p);
 
         // Keep track of the node closest to the end
         if (!min || euclid(p.point, end) < euclid(min.point, end)) {
@@ -165,7 +161,7 @@ export const escape = (
 ) => {
   let queue = new PriorityQueue<PathNode>(sortDesc);
   let startNode = new PathNode(start, 0, undefined);
-  queue.insert(0, startNode);
+  queue.push(0, startNode);
 
   let max = startNode;
   while (!queue.empty()) {
@@ -186,7 +182,7 @@ export const escape = (
       let search_result = node.find(neighbor);
       if (!search_result || new_cost < search_result.cost) {
         let p = new PathNode(neighbor, new_cost, node);
-        queue.insert(new_cost + euclid(neighbor, source), p);
+        queue.push(new_cost + euclid(neighbor, source), p);
 
         // Keep track of the node closest to the end
         if (!max || euclid(p.point, source) > euclid(max.point, source)) {
