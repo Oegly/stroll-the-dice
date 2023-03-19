@@ -1,6 +1,7 @@
 import { ANGLES, Maze, Point, Tile } from './maze';
 import { Mob } from './mob';
 import { Player } from './player';
+import { a_star, PathNode } from './path';
 import { Torch } from './torch';
 
 const BG_CTX = (<HTMLCanvasElement> document.getElementById('background')).getContext('2d') 
@@ -21,19 +22,25 @@ export class Screen {
   player: PlayerSprite;
   torches: TorchSprite[] = [];
   mobs: MobSprite[] = [];
+  path: PathNode;
 
   constructor(player: Player, maze: Maze, goal: Point, fps: number) {
     this.fps = fps;
     this.player = new PlayerSprite(player);
     this.drawMaze(maze, goal);
     [1, 2, 3, 4, 5, 6].forEach(n => this.drawDice(n, true));
+
+    this.path = a_star(maze, {x: 0, y: 0}, goal).reverse()
   }
 
   render() {
     this.frameCount++;
 
     this.clear();
+    // Used for examining mazes
+    //drawPath(this.path);
     this.drawPlayer();
+    this.drawMobs();
     this.drawTorches();
   }
   
@@ -189,6 +196,7 @@ class MobSprite {
   dy: number;
   fear: number;
   stun: number;
+  path: PathNode | undefined;
 
   constructor(mob: Mob) {
     this.update(mob)
@@ -201,6 +209,7 @@ class MobSprite {
     this.dy = mob.vy;
     this.fear = mob.fear;
     this.stun = mob.stun;
+    this.path = mob.path;
   }
 
   draw(dt: number) {
@@ -213,20 +222,26 @@ class MobSprite {
     let green = (Math.round(this.fear * 10)).toString(16).padStart(2, "0");
     drawRect(this.x, this.y, CTX, "#00" + green + "00");
     CTX.globalAlpha = 1;
+
+    /*if (this.path) {
+      drawPath(this.path);
+    }*/
   }
 }
 
 class TorchSprite {
   x: number;
   y: number;
+  tiles: Point[];
 
   constructor(torch: Torch) {
-    this.update(torch.x, torch.y)
+    this.update(torch.x, torch.y, torch.tiles(2))
   }
 
-  update(x: number, y: number) {
+  update(x: number, y: number, tiles: Point[]) {
     this.x = x;
     this.y = y;
+    this.tiles = tiles;
   }
 
   draw(flicker: number) {
@@ -242,6 +257,8 @@ class TorchSprite {
     CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * 2, 0, Math.PI * 2);
     CTX.fill();
 
+    //this.tiles.forEach(t => drawRect(t.x, t.y, CTX, "ff4"))
+
     CTX.globalAlpha = 0.04;
     CTX.beginPath();
     CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * (2 + flicker), 0, Math.PI * 2);
@@ -249,4 +266,14 @@ class TorchSprite {
 
     CTX.restore();
   }
+}
+
+export const drawPath = (node: PathNode) => {
+  while (node) {
+    CTX.globalAlpha = 0.8 / node.cost + 0.2;
+    drawRect(node.point.x, node.point.y, CTX, "#449944")
+    node = node.parent;
+  }
+
+  CTX.globalAlpha = 1;
 }
