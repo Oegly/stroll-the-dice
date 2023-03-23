@@ -3,6 +3,7 @@ const seedRandom = require('seedrandom');
 const FPS = 60;
 const UPS = 5;
 
+import { PropertyMatrix } from './utils/propertymatrix';
 import { Game } from './index';
 import Inputs from './input';
 import { Maze, Point } from './maze';
@@ -10,6 +11,7 @@ import { Mob } from './mob';
 import { Player } from './player';
 import { Screen } from './screen';
 import { Torch  } from './torch';
+import { euclid, manhattan } from './path';
 
 export class Level {
   tickCount: number;
@@ -18,6 +20,7 @@ export class Level {
   maze: Maze;
   torches: Torch[];
   torchCooldown: number = 0;
+  lightMatrix: PropertyMatrix<number>;
   mobs: Mob[] = [];
   mobCount: number = 0;
   goal: Point;
@@ -37,6 +40,8 @@ export class Level {
     this.goal = {x: 23, y: 13};
     this.screen = new Screen(this.player, this.maze, this.goal, FPS);
 
+    this.setLightLevels();
+
     this.playing = true;
     this.game = game;
 
@@ -49,7 +54,7 @@ export class Level {
     this.inputs.update();
     this.player.act(this.inputs, this.maze, this.torches);
     this.mobs.forEach(m => m.act(this.maze, this.player, this.torches));
-    this.screen.updateSprites(this.player, this.torches, this.mobs);
+    this.screen.updateSprites(this.player, this.torches, this.mobs, this.lightMatrix);
 
     if (this.torchCooldown == 0) {
       if (this.inputs.pressed.includes(' ')) {
@@ -62,6 +67,8 @@ export class Level {
           this.torches.push(new Torch(this.player.x, this.player.y))
           this.torchCooldown = 5;
         }
+
+        this.setLightLevels();
       }
     } else {
       this.torchCooldown--;
@@ -99,6 +106,24 @@ export class Level {
       //this.screen.victory();
       this.game.changeLevel();
     }
+  }
+
+  setLightLevels() {
+    let init = (matrix: number[][]) => {
+      this.torches.forEach(torch => {
+        torch.tiles().filter(tile => this.maze.withinBounds(tile.x, tile.y))
+        .forEach(tile => {
+          let light = torch.r - euclid(tile, torch);
+          matrix[tile.x][tile.y] = matrix[tile.x][tile.y] + light;
+        });
+      });
+
+      return matrix;
+    }
+
+    this.lightMatrix = new PropertyMatrix<number>(
+      this.maze.width, this.maze.height, init, 0
+    );
   }
 
   render() {

@@ -67,7 +67,7 @@ export class Mob {
     })[0];
 
     if (this.nearestTorch && euclid(this, this.nearestTorch) <= 2) {
-      const unsafe = [...torches.map(t => t.tiles(2))].flat();
+      const unsafe = [...torches.map(t => t.tiles())].flat();
       this.path = escape(maze, {x: this.x, y: this.y}, this.nearestTorch, 5, unsafe)?.parent;
       this.fear = Math.min(this.fear + 5, 15);
     }
@@ -103,7 +103,7 @@ export class Mob {
 
   hunt(player: Player, maze: Maze, torches: Torch[]) {
     // Try to follow path, recalculate if not possible
-    const unsafe = [...torches.map(t => t.tiles(2))].flat();
+    const unsafe = [...torches.map(t => t.tiles())].flat();
     //console.log(unsafe);
 
     if (!this.followPath()) {
