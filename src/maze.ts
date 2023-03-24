@@ -1,3 +1,7 @@
+import { euclid } from "./path";
+import { Torch } from "./torch";
+import { PropertyMatrix } from "./utils/propertymatrix";
+
 const seedRandom = require('seedrandom');
 
 const NORTH = {x: 0, y: -1};
@@ -46,6 +50,7 @@ export class Maze {
   grid: Tile[][];
   start: Tile;
   lastTile: Tile;
+  lightMatrix: PropertyMatrix<number>;
   done: Boolean;
   seed: number;
 
@@ -150,5 +155,27 @@ export class Maze {
     return [0, 1, 2, 3]
     .filter(a => this.legalMove(x, y, a))
     .map(a => this.findTile(x + ANGLES[a].x, y + ANGLES[a].y));
+  }
+
+  lightLevel(x: number, y: number) {
+    return this.lightMatrix.find(x, y);
+  }
+
+  setLightlevels(torches: Torch[]) {
+    let init = (matrix: number[][]) => {
+      torches.forEach(torch => {
+        torch.tiles().filter(tile => this.withinBounds(tile.x, tile.y))
+        .forEach(tile => {
+          let light = torch.r - euclid(tile, torch);
+          matrix[tile.x][tile.y] = matrix[tile.x][tile.y] + light;
+        });
+      });
+
+      return matrix;
+    }
+
+    this.lightMatrix = new PropertyMatrix<number>(
+      this.width, this.height, init, 0
+    );
   }
 }

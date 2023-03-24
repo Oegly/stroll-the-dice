@@ -3,7 +3,6 @@ const seedRandom = require('seedrandom');
 const FPS = 60;
 const UPS = 5;
 
-import { PropertyMatrix } from './utils/propertymatrix';
 import { Game } from './index';
 import Inputs from './input';
 import { Maze, Point } from './maze';
@@ -20,7 +19,6 @@ export class Level {
   maze: Maze;
   torches: Torch[];
   torchCooldown: number = 0;
-  lightMatrix: PropertyMatrix<number>;
   mobs: Mob[] = [];
   mobCount: number = 0;
   goal: Point;
@@ -53,8 +51,8 @@ export class Level {
     this.tickCount++;
     this.inputs.update();
     this.player.act(this.inputs, this.maze, this.torches);
-    this.mobs.forEach(m => m.act(this.maze, this.player, this.torches, this.lightMatrix));
-    this.screen.updateSprites(this.player, this.torches, this.mobs, this.lightMatrix);
+    this.mobs.forEach(m => m.act(this.maze, this.player, this.torches));
+    this.screen.updateSprites(this.player, this.torches, this.mobs, this.maze.lightMatrix);
 
     if (this.torchCooldown == 0) {
       if (this.inputs.pressed.includes(' ')) {
@@ -109,21 +107,7 @@ export class Level {
   }
 
   setLightLevels() {
-    let init = (matrix: number[][]) => {
-      this.torches.forEach(torch => {
-        torch.tiles().filter(tile => this.maze.withinBounds(tile.x, tile.y))
-        .forEach(tile => {
-          let light = torch.r - euclid(tile, torch);
-          matrix[tile.x][tile.y] = matrix[tile.x][tile.y] + light;
-        });
-      });
-
-      return matrix;
-    }
-
-    this.lightMatrix = new PropertyMatrix<number>(
-      this.maze.width, this.maze.height, init, 0
-    );
+    this.maze.setLightlevels(this.torches);
   }
 
   render() {
