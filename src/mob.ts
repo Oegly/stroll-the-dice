@@ -2,6 +2,9 @@ import { Maze, Tile, Point, ANGLES } from './maze';
 import { a_star, escape, PathNode, euclid, manhattan } from './path';
 import { Player } from './player';
 import { Torch } from './torch';
+import { PropertyMatrix } from './utils/propertymatrix';
+
+const FOV = 5;
 
 enum MobState {
   Strolling = 1,
@@ -27,24 +30,32 @@ export class Mob {
     this.y = y;
   }
 
-  act(maze: Maze, player: Player, torches: Torch[]) {
+  act(maze: Maze, player: Player, torches: Torch[], lightMatrix: PropertyMatrix<number>) {
     this.x += this.vx;
     this.y += this.vy;
     this.vx = 0;
     this.vy = 0;
 
-    this.state = this.evaluate(maze, player, torches)
+    this.state = this.evaluate(maze, player, torches, lightMatrix)
     switch (this.state) {
-      case MobState.Strolling: this.stroll(maze); break;
-      case MobState.Hunting: this.hunt(player, maze, torches); break;
-      case MobState.Fleeing: this.flee(); break;
+      case MobState.Strolling: this.stroll(maze, lightMatrix); break;
+      case MobState.Hunting: this.hunt(player, maze, torches, lightMatrix); break;
+      case MobState.Fleeing: this.flee(lightMatrix); break;
       case MobState.Stunned: this.wakeUp(); break;
       default: break;
     }
   }
 
-  followPath() {
+  followPath(lightMatrix: PropertyMatrix<number>) {
     if (!(this.path && manhattan(this, this.path.point) == 1)) {
+      return false;
+    }
+
+    let light_a = lightMatrix.find(this.x, this.y);
+    let light_b = lightMatrix.find(this.path.point.x, this.path.point.y)
+
+    if (light_a < light_b) {
+      //this.path = undefined;
       return false;
     }
 
@@ -56,7 +67,7 @@ export class Mob {
     return true;
   }
 
-  evaluate(maze: Maze, player: Player, torches: Torch[]) {
+  evaluate(maze: Maze, player: Player, torches: Torch[], lightMatrix: PropertyMatrix<number>) {
     // Is the mob stunned?
     if (this.stun) {
       return MobState.Stunned;
@@ -66,8 +77,9 @@ export class Mob {
       return euclid(this, a) - euclid(this, b);
     })[0];
 
-    if (this.nearestTorch && euclid(this, this.nearestTorch) <= 2) {
-      const unsafe = [...torches.map(t => t.tiles())].flat();
+    if (this.nearestTorch && lightMatrix.find(this.x, this.y)) {
+      const unsafe = this.unsafeTiles(torches, lightMatrix);
+
       this.path = escape(maze, {x: this.x, y: this.y}, this.nearestTorch, 5, unsafe)?.parent;
       this.fear = Math.min(this.fear + 5, 15);
     }
@@ -86,33 +98,35 @@ export class Mob {
     return MobState.Strolling;
   }
 
-  stroll(maze: Maze) {
+  stroll(maze: Maze, lightMatrix: PropertyMatrix<number>) {
     if(Math.random() < 0.90 ) {
       return;
     }
 
-    let neighbors: number[] = [0, 1, 2, 3].filter((v: any, i: number) => {
-      return maze.legalMove(this.x, this.y, i)
-    });
+    let neighbors: Point[] = maze.legalNeighbors(this.x, this.y)
+    let next = neighbors[Math.floor(Math.random() * neighbors.length)];
 
-    let angle = neighbors[Math.floor(Math.random() * neighbors.length)];
-
-    this.vx = ANGLES[angle].x;
-    this.vy = ANGLES[angle].y;
+    this.path = new PathNode(next, 1, undefined);
+    this.followPath(lightMatrix);
   }
 
-  hunt(player: Player, maze: Maze, torches: Torch[]) {
+  hunt(player: Player, maze: Maze, torches: Torch[], lightMatrix: PropertyMatrix<number>) {
     // Try to follow path, recalculate if not possible
-    const unsafe = [...torches.map(t => t.tiles())].flat();
-    //console.log(unsafe);
+    const unsafe = this.unsafeTiles(torches, lightMatrix);
 
-    if (!this.followPath()) {
+    if (!this.followPath(lightMatrix)) {
       this.path = a_star(
         maze, {x: this.x, y: this.y}, {x: player.x, y: player.y}, 5, unsafe
       )?.parent;
 
-      this.followPath();
+      this.followPath(lightMatrix);
     }
+  }
+
+  unsafeTiles(torches: Torch[], lightMatrix: PropertyMatrix<number>): Point[] {
+    return [...torches.map(t => t.tiles())].flat()
+    .filter(t => lightMatrix.withinBounds({x: t.x, y: t.y}))
+    .filter(t => lightMatrix.find(t.x, t.y) > lightMatrix.find(this.x, this.y));
   }
 
   setStun() {
@@ -123,8 +137,8 @@ export class Mob {
     this.stun = Math.max(this.stun - 1, 0);
   }
 
-  flee() {
+  flee(lightMatrix: PropertyMatrix<number>) {
     this.fear = Math.max(this.fear - 1, 0);
-    this.followPath();
+    this.followPath(lightMatrix);
   }
 }
