@@ -4,16 +4,16 @@ import { euclid } from "./path";
 export class Torch {
   x: number;
   y: number;
+  r: number = 2.5;
 
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
-
-    console.log("I am torch at ", this, this.tiles(2));
   }
 
   // TODO: Find a better algorithm than brute force
-  tiles(r: number): Point[] {
+  tiles(): Point[] {
+    let r = Math.floor(this.r)
     let ret = [];
 
     for (let x = this.x - r; x <= this.x + r; x++) {

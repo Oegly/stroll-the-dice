@@ -10,6 +10,7 @@ import { Mob } from './mob';
 import { Player } from './player';
 import { Screen } from './screen';
 import { Torch  } from './torch';
+import { euclid, manhattan } from './path';
 
 export class Level {
   tickCount: number;
@@ -35,6 +36,10 @@ export class Level {
     this.torches = levelArgs.torches.map(t => new Torch(t.x, t.y));
     this.mobs = levelArgs.mobs.map(m => new Mob(m.x, m.y));
     this.goal = {x: 23, y: 13};
+
+    this.setLightLevels();
+    this.maze.setCost();
+
     this.screen = new Screen(this.player, this.maze, this.goal, FPS);
 
     this.playing = true;
@@ -49,7 +54,7 @@ export class Level {
     this.inputs.update();
     this.player.act(this.inputs, this.maze, this.torches);
     this.mobs.forEach(m => m.act(this.maze, this.player, this.torches));
-    this.screen.updateSprites(this.player, this.torches, this.mobs);
+    this.screen.updateSprites(this.player, this.torches, this.mobs, this.maze.lightMatrix);
 
     if (this.torchCooldown == 0) {
       if (this.inputs.pressed.includes(' ')) {
@@ -62,6 +67,8 @@ export class Level {
           this.torches.push(new Torch(this.player.x, this.player.y))
           this.torchCooldown = 5;
         }
+
+        this.setLightLevels();
       }
     } else {
       this.torchCooldown--;
@@ -99,6 +106,10 @@ export class Level {
       //this.screen.victory();
       this.game.changeLevel();
     }
+  }
+
+  setLightLevels() {
+    this.maze.setLightlevels(this.torches);
   }
 
   render() {

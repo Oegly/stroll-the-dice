@@ -3,6 +3,7 @@ import { Mob } from './mob';
 import { Player } from './player';
 import { a_star, PathNode } from './path';
 import { Torch } from './torch';
+import { PropertyMatrix } from './utils/propertymatrix';
 
 const BG_CTX = (<HTMLCanvasElement> document.getElementById('background')).getContext('2d') 
 const CTX = (<HTMLCanvasElement> document.getElementById('canvas')).getContext('2d');
@@ -21,6 +22,7 @@ export class Screen {
   frameCount: number = 0;
   player: PlayerSprite;
   torches: TorchSprite[] = [];
+  lightMatrix: PropertyMatrix<number>;
   mobs: MobSprite[] = [];
   path: PathNode;
 
@@ -44,9 +46,13 @@ export class Screen {
     this.drawTorches();
   }
   
-  updateSprites(player: Player, torches: Torch[], mobs: Mob[]) {
+  updateSprites(
+    player: Player, torches: Torch[],
+    mobs: Mob[], lightMatrix: PropertyMatrix<number>
+    ) {
     this.player.update(player);
     this.torches = torches.map(t => new TorchSprite(t));
+    this.lightMatrix = lightMatrix;
     this.mobs = mobs.map(m => new MobSprite(m));
   }
 
@@ -55,7 +61,12 @@ export class Screen {
 
     for (let x = 0; x < maze.width; x++) {
       for (let y = 0; y < maze.height; y++) {
+        let cost = maze.costMatrix.find(x, y)/maze.maxCost;
+
+        BG_CTX.save();
+        BG_CTX.globalAlpha = 0.85 - cost * 0.45;
         drawTile(maze.grid[x][y], BG_CTX, TILE_COLOR);
+        BG_CTX.restore();
       }
     }
 
@@ -87,10 +98,23 @@ export class Screen {
   } 
 
   drawTorches() {
-    let flicker = 0.15 * Math.abs(0.5 - (this.frameCount % this.fps / this.fps));
+    let flicker = 0.035 * Math.abs(2 - (this.frameCount % (this.fps * 4) / this.fps));
 
     CTX.fillStyle = "#ff4"
-    this.torches.forEach(torch => torch.draw(flicker));
+    this.torches.forEach(torch => {
+      torch.draw(flicker);
+      //console.log("Drawing tile!", this.lightMatrix);
+      torch.tiles.filter(tile => this.lightMatrix.withinBounds(tile))
+      .forEach(tile => {
+        let light = this.lightMatrix.find(tile.x, tile.y);
+        light = 0.18/(0.18 + Math.pow(Math.E, -light));
+
+        CTX.save()
+        CTX.globalAlpha = light + flicker;
+        drawRect(tile.x, tile.y, CTX, "#ff4");
+        CTX.restore();
+      });
+    });
   }
 
   clear() {
@@ -232,16 +256,18 @@ class MobSprite {
 class TorchSprite {
   x: number;
   y: number;
+  r: number;
   tiles: Point[];
 
   constructor(torch: Torch) {
-    this.update(torch.x, torch.y, torch.tiles(2))
+    this.update(torch)
   }
 
-  update(x: number, y: number, tiles: Point[]) {
-    this.x = x;
-    this.y = y;
-    this.tiles = tiles;
+  update(torch: Torch) {
+    this.x = torch.x;
+    this.y = torch.y;
+    this.r = torch.r;
+    this.tiles = torch.tiles();
   }
 
   draw(flicker: number) {
@@ -254,14 +280,7 @@ class TorchSprite {
 
     CTX.globalAlpha = 0.08;
     CTX.beginPath();
-    CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * 2, 0, Math.PI * 2);
-    CTX.fill();
-
-    //this.tiles.forEach(t => drawRect(t.x, t.y, CTX, "ff4"))
-
-    CTX.globalAlpha = 0.04;
-    CTX.beginPath();
-    CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * (2 + flicker), 0, Math.PI * 2);
+    CTX.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE * (this.r * 0.8 + flicker * 2), 0, Math.PI * 2);
     CTX.fill();
 
     CTX.restore();

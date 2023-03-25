@@ -1,3 +1,7 @@
+import { euclid, PathNode, PriorityQueue } from "./path";
+import { Torch } from "./torch";
+import { PropertyMatrix } from "./utils/propertymatrix";
+
 const seedRandom = require('seedrandom');
 
 const NORTH = {x: 0, y: -1};
@@ -46,6 +50,9 @@ export class Maze {
   grid: Tile[][];
   start: Tile;
   lastTile: Tile;
+  maxCost: number;
+  lightMatrix: PropertyMatrix<number>;
+  costMatrix: PropertyMatrix<number>;
   done: Boolean;
   seed: number;
 
@@ -150,5 +157,60 @@ export class Maze {
     return [0, 1, 2, 3]
     .filter(a => this.legalMove(x, y, a))
     .map(a => this.findTile(x + ANGLES[a].x, y + ANGLES[a].y));
+  }
+
+  lightLevel(x: number, y: number) {
+    return this.lightMatrix.find(x, y);
+  }
+
+  setLightlevels(torches: Torch[]) {
+    let init = (matrix: number[][]) => {
+      torches.forEach(torch => {
+        torch.tiles().filter(tile => this.withinBounds(tile.x, tile.y))
+        .forEach(tile => {
+          let light = torch.r - euclid(tile, torch);
+          matrix[tile.x][tile.y] = matrix[tile.x][tile.y] + light;
+        });
+      });
+
+      return matrix;
+    }
+
+    this.lightMatrix = new PropertyMatrix<number>(
+      this.width, this.height, init, 0
+    );
+  }
+
+  setCost() {
+    let init = (matrix: number[][]) => {
+      let queue = new PriorityQueue<Point>();
+      let startNode = this.start;
+      queue.push(0, startNode);
+
+      this.maxCost = 0;
+      while(!queue.empty()) {
+        console.log(queue);
+        let node = queue.pop();
+        let x = node.x;
+        let y = node.y;
+
+        this.legalNeighbors(x, y)
+        .filter(next => !matrix[next.x][next.y])
+        .forEach(next => {
+          console.log(next);
+          let cost = matrix[x][y] + 1;
+          matrix[next.x][next.y] = cost;
+          this.maxCost = Math.max(this.maxCost, cost);
+          queue.push(cost, next);
+        });
+      }
+
+      console.log(matrix[0][0], this.maxCost);
+      return matrix;
+    }
+
+    this.costMatrix = new PropertyMatrix<number>(
+      this.width, this.height, init, 0
+    );
   }
 }
