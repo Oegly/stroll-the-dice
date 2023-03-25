@@ -36,9 +36,11 @@ export class Level {
     this.torches = levelArgs.torches.map(t => new Torch(t.x, t.y));
     this.mobs = levelArgs.mobs.map(m => new Mob(m.x, m.y));
     this.goal = {x: 23, y: 13};
-    this.screen = new Screen(this.player, this.maze, this.goal, FPS);
 
     this.setLightLevels();
+    this.maze.setCost();
+
+    this.screen = new Screen(this.player, this.maze, this.goal, FPS);
 
     this.playing = true;
     this.game = game;

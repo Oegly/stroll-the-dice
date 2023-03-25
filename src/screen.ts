@@ -61,7 +61,12 @@ export class Screen {
 
     for (let x = 0; x < maze.width; x++) {
       for (let y = 0; y < maze.height; y++) {
+        let cost = maze.costMatrix.find(x, y)/maze.maxCost;
+
+        BG_CTX.save();
+        BG_CTX.globalAlpha = 0.85 - cost * 0.45;
         drawTile(maze.grid[x][y], BG_CTX, TILE_COLOR);
+        BG_CTX.restore();
       }
     }
 

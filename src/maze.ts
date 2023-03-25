@@ -1,4 +1,4 @@
-import { euclid } from "./path";
+import { euclid, PathNode, PriorityQueue } from "./path";
 import { Torch } from "./torch";
 import { PropertyMatrix } from "./utils/propertymatrix";
 
@@ -50,7 +50,9 @@ export class Maze {
   grid: Tile[][];
   start: Tile;
   lastTile: Tile;
+  maxCost: number;
   lightMatrix: PropertyMatrix<number>;
+  costMatrix: PropertyMatrix<number>;
   done: Boolean;
   seed: number;
 
@@ -175,6 +177,39 @@ export class Maze {
     }
 
     this.lightMatrix = new PropertyMatrix<number>(
+      this.width, this.height, init, 0
+    );
+  }
+
+  setCost() {
+    let init = (matrix: number[][]) => {
+      let queue = new PriorityQueue<Point>();
+      let startNode = this.start;
+      queue.push(0, startNode);
+
+      this.maxCost = 0;
+      while(!queue.empty()) {
+        console.log(queue);
+        let node = queue.pop();
+        let x = node.x;
+        let y = node.y;
+
+        this.legalNeighbors(x, y)
+        .filter(next => !matrix[next.x][next.y])
+        .forEach(next => {
+          console.log(next);
+          let cost = matrix[x][y] + 1;
+          matrix[next.x][next.y] = cost;
+          this.maxCost = Math.max(this.maxCost, cost);
+          queue.push(cost, next);
+        });
+      }
+
+      console.log(matrix[0][0], this.maxCost);
+      return matrix;
+    }
+
+    this.costMatrix = new PropertyMatrix<number>(
       this.width, this.height, init, 0
     );
   }
