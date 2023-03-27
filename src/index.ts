@@ -27,6 +27,21 @@ export class Game {
   constructor() {
     this.inputs = new Inputs()
     this.level = new Level(levelArgs[this.levelCount], this.inputs, this);
+    this.tickInterval = setInterval(() => this.update(), 1000/UPS);
+  }
+
+  update() {
+    this.inputs.update();
+
+    if (this.inputs.pressed.includes('p')) {
+      this.level.pause();
+    }
+
+    if (!this.level.running) {
+      return;
+    }
+
+    this.level.update(this.inputs);
   }
 
   changeLevel() {

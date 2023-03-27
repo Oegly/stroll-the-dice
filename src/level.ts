@@ -13,9 +13,9 @@ import { Torch  } from './torch';
 import { euclid, manhattan } from './path';
 
 export class Level {
+  running: boolean = true;
   tickCount: number;
   player: Player;
-  inputs: Inputs;
   maze: Maze;
   torches: Torch[];
   torchCooldown: number = 0;
@@ -30,7 +30,6 @@ export class Level {
 
   constructor(levelArgs: {seed: number, mobs: Point[], torches: Point[]}, inputs: Inputs, game: Game) {
     this.tickCount = 0;
-    this.inputs = inputs;
     this.maze = new Maze(24, 14, {x: 0, y: 0}, 2, levelArgs.seed);
     this.player = new Player(0, 0);
     this.torches = levelArgs.torches.map(t => new Torch(t.x, t.y));
@@ -45,19 +44,17 @@ export class Level {
     this.playing = true;
     this.game = game;
 
-    this.updateInterval = setInterval(() => this.update(), 1000/UPS);
     this.renderInterval = setInterval(() => requestAnimationFrame(() => this.render()), 1000/FPS);
   }
 
-  update() {
+  update(inputs: Inputs) {
     this.tickCount++;
-    this.inputs.update();
-    this.player.act(this.inputs, this.maze, this.torches);
+    this.player.act(inputs, this.maze, this.torches);
     this.mobs.forEach(m => m.act(this.maze, this.player, this.torches));
     this.screen.updateSprites(this.player, this.torches, this.mobs, this.maze.lightMatrix);
 
     if (this.torchCooldown == 0) {
-      if (this.inputs.pressed.includes(' ')) {
+      if (inputs.pressed.includes(' ')) {
         if (this.torches.some(t => t.x == this.player.x && t.y == this.player.y)) {
           this.player.torchCount++;
           this.torches = this.torches.filter(t => !(t.x == this.player.x && t.y == this.player.y));
@@ -101,11 +98,15 @@ export class Level {
     // Check victory condition
     if (this.player.x == this.goal.x && this.player.y == this.goal.y) {
       console.log('VICORY!!!');
-      clearInterval(this.updateInterval);
       clearInterval(this.renderInterval);
       //this.screen.victory();
       this.game.changeLevel();
     }
+  }
+
+  pause() {
+    this.running = !this.running;
+    this.screen.setState(this.running);
   }
 
   setLightLevels() {

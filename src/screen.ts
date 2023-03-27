@@ -20,6 +20,7 @@ const OFFSET_Y = 0;
 export class Screen {
   fps: number;
   frameCount: number = 0;
+  running: boolean = true;
   player: PlayerSprite;
   torches: TorchSprite[] = [];
   lightMatrix: PropertyMatrix<number>;
@@ -36,6 +37,10 @@ export class Screen {
   }
 
   render() {
+    if (!this.running) {
+      return;
+    }
+
     this.frameCount++;
 
     this.clear();
@@ -46,6 +51,24 @@ export class Screen {
     this.drawTorches();
   }
   
+  setState(running: boolean) {
+    this.running = running;
+
+    if (!this.running) {
+      CTX.save();
+      CTX.globalAlpha = 0.2;
+      CTX.fillStyle = "#000";
+
+      CTX.fillRect(0, 0, BG_CTX.canvas.width, BG_CTX.canvas.height);
+
+      CTX.restore();
+
+      CTX.fillStyle = "#fff";
+      CTX.font = "bold 4em monospace"
+      CTX.fillText("PAUSED", 240, 180);
+    }
+  }
+
   updateSprites(
     player: Player, torches: Torch[],
     mobs: Mob[], lightMatrix: PropertyMatrix<number>
