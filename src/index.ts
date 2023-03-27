@@ -4,6 +4,7 @@ const FPS = 60;
 const UPS = 5;
 
 import Inputs from './input';
+import { getLevel, setLevel } from './utils/storage';
 import { Maze, Point } from './maze';
 import { Mob } from './mob';
 import { Player } from './player';
@@ -21,7 +22,7 @@ const levelArgs: {seed: number, mobs: Point[], torches: Point[]}[] = require('./
 export class Game {
   inputs: Inputs;
   level: Level;
-  levelCount: number = 0;
+  levelCount: number = getLevel();
   tickInterval: any;
 
   constructor() {
@@ -47,8 +48,11 @@ export class Game {
   changeLevel() {
     this.levelCount += 1
 
+    setLevel(this.levelCount);
+
     if (this.levelCount >= levelArgs.length) {
       requestAnimationFrame(() => this.level.screen.victory());
+      setLevel(0);
       return;
     }
 
