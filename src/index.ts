@@ -10,9 +10,9 @@ import { Mob } from './mob';
 import { Player } from './player';
 import { Screen } from './screen';
 import { Torch  } from './torch';
-import { Level } from './level';
+import { Level, levelArgs } from './level';
 
-const levelArgs: {seed: number, mobs: Point[], torches: Point[]}[] = require('./levels.json')
+const args: levelArgs[] = require('./levels.json')
 /*[
   {seed: 1, mobs: [{x: 22, y: 12}], torches: [{x: 1, y: 3}]},
   {seed: 12, mobs: [{x: 22, y: 9}, {x: 21, y: 10}], torches: [{x: 23, y: 0}]},
@@ -27,7 +27,7 @@ export class Game {
 
   constructor() {
     this.inputs = new Inputs()
-    this.level = new Level(levelArgs[this.levelCount], this.inputs, this);
+    this.level = new Level(args[this.levelCount], this.inputs, this);
     this.tickInterval = setInterval(() => this.update(), 1000/UPS);
   }
 
@@ -50,13 +50,13 @@ export class Game {
 
     setLevel(this.levelCount);
 
-    if (this.levelCount >= levelArgs.length) {
+    if (this.levelCount >= args.length) {
       requestAnimationFrame(() => this.level.screen.victory());
       setLevel(0);
       return;
     }
 
-    this.level = new Level(levelArgs[this.levelCount], this.inputs, this);
+    this.level = new Level(args[this.levelCount], this.inputs, this);
   }
 }
 

@@ -3,6 +3,8 @@ const seedRandom = require('seedrandom');
 const FPS = 60;
 const UPS = 5;
 
+export type levelArgs = {seed: number, mobs: Point[], torches: Point[]}; 
+
 import { Game } from './index';
 import Inputs from './input';
 import { Maze, Point } from './maze';
@@ -13,6 +15,7 @@ import { Torch  } from './torch';
 import { euclid, manhattan } from './path';
 
 export class Level {
+  args: levelArgs;
   running: boolean = true;
   tickCount: number;
   player: Player;
@@ -24,27 +27,29 @@ export class Level {
   goal: Point;
   screen: Screen;
   playing: Boolean;
-  updateInterval: any;
   renderInterval: any;
   game: Game;
 
-  constructor(levelArgs: {seed: number, mobs: Point[], torches: Point[]}, inputs: Inputs, game: Game) {
+  constructor(args: levelArgs, inputs: Inputs, game: Game) {
+    this.game = game;
+    this.args = args;
+    this.maze = new Maze(24, 14, {x: 0, y: 0}, 2, args.seed);
+    this.goal = {x: 23, y: 13};
+    this.maze.setCost();
+
+    this.start(this.args);
+
+    this.renderInterval = setInterval(() => requestAnimationFrame(() => this.render()), 1000/FPS);
+  }
+
+  start(levelArgs: {seed: number, mobs: Point[], torches: Point[]}) {
     this.tickCount = 0;
-    this.maze = new Maze(24, 14, {x: 0, y: 0}, 2, levelArgs.seed);
     this.player = new Player(0, 0);
     this.torches = levelArgs.torches.map(t => new Torch(t.x, t.y));
     this.mobs = levelArgs.mobs.map(m => new Mob(m.x, m.y));
-    this.goal = {x: 23, y: 13};
-
-    this.setLightLevels();
-    this.maze.setCost();
-
-    this.screen = new Screen(this.player, this.maze, this.goal, FPS);
-
     this.playing = true;
-    this.game = game;
-
-    this.renderInterval = setInterval(() => requestAnimationFrame(() => this.render()), 1000/FPS);
+    this.screen = new Screen(this.player, this.maze, this.goal, FPS);
+    this.setLightLevels();
   }
 
   update(inputs: Inputs) {
@@ -88,9 +93,9 @@ export class Level {
         let die = this.player.rollDie();
         this.screen.drawDice(die, false);
         if (!die) {
-          clearInterval(this.updateInterval);
-          clearInterval(this.renderInterval);
-          requestAnimationFrame(this.screen.gameOver);
+          // Restart the level
+          console.log("Restaring!")
+          this.start(this.args);
         };
       }
     }
@@ -102,6 +107,10 @@ export class Level {
       //this.screen.victory();
       this.game.changeLevel();
     }
+  }
+
+  victory() {
+    return this.player.x == this.goal.x && this.player.y == this.goal.y;
   }
 
   pause() {
