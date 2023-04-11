@@ -48,7 +48,7 @@ export class Level {
     this.torches = levelArgs.torches.map(t => new Torch(t.x, t.y));
     this.mobs = levelArgs.mobs.map(m => new Mob(m.x, m.y));
     this.playing = true;
-    this.screen = new Screen(this.player, this.maze, this.goal, FPS);
+    this.screen = new Screen(this.game, this.player, this.maze, this.goal, FPS);
     this.setLightLevels();
   }
 
@@ -103,10 +103,14 @@ export class Level {
     // Check victory condition
     if (this.player.x == this.goal.x && this.player.y == this.goal.y) {
       console.log('VICORY!!!');
-      clearInterval(this.renderInterval);
       //this.screen.victory();
-      this.game.changeLevel();
+      this.game.nextLevel();
     }
+  }
+
+  tearDown() {
+    this.screen.pauseMenu.deactivate()
+    clearInterval(this.renderInterval);
   }
 
   victory() {

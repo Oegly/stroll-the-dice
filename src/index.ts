@@ -4,7 +4,7 @@ const FPS = 60;
 const UPS = 5;
 
 import Inputs from './input';
-import { getLevel, setLevel } from './utils/storage';
+import { getLevel, setLevel, setlevelCount } from './utils/storage';
 import { Maze, Point } from './maze';
 import { Mob } from './mob';
 import { Player } from './player';
@@ -13,6 +13,7 @@ import { Torch  } from './torch';
 import { Level, levelArgs } from './level';
 
 const args: levelArgs[] = require('./levels.json')
+setlevelCount(args.length);
 /*[
   {seed: 1, mobs: [{x: 22, y: 12}], torches: [{x: 1, y: 3}]},
   {seed: 12, mobs: [{x: 22, y: 9}, {x: 21, y: 10}], torches: [{x: 23, y: 0}]},
@@ -45,10 +46,13 @@ export class Game {
     this.level.update(this.inputs);
   }
 
-  changeLevel() {
-    this.levelCount += 1
+  nextLevel() {
+    this.changeLevel(this.levelCount + 1)
+  }
 
-    setLevel(this.levelCount);
+  changeLevel(level: number) {
+    this.levelCount = level;
+    this.level.tearDown();
 
     if (this.levelCount >= args.length) {
       requestAnimationFrame(() => this.level.screen.victory());
@@ -56,6 +60,7 @@ export class Game {
       return;
     }
 
+    setLevel(this.levelCount);
     this.level = new Level(args[this.levelCount], this.inputs, this);
   }
 }
