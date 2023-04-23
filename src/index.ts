@@ -4,14 +4,16 @@ const FPS = 60;
 const UPS = 5;
 
 import Inputs from './input';
+import { getLevel, setLevel, setlevelCount } from './utils/storage';
 import { Maze, Point } from './maze';
 import { Mob } from './mob';
 import { Player } from './player';
 import { Screen } from './screen';
 import { Torch  } from './torch';
-import { Level } from './level';
+import { Level, levelArgs } from './level';
 
-const levelArgs: {seed: number, mobs: Point[], torches: Point[]}[] = require('./levels.json')
+const args: levelArgs[] = require('./levels.json')
+setlevelCount(args.length);
 /*[
   {seed: 1, mobs: [{x: 22, y: 12}], torches: [{x: 1, y: 3}]},
   {seed: 12, mobs: [{x: 22, y: 9}, {x: 21, y: 10}], torches: [{x: 23, y: 0}]},
@@ -21,23 +23,45 @@ const levelArgs: {seed: number, mobs: Point[], torches: Point[]}[] = require('./
 export class Game {
   inputs: Inputs;
   level: Level;
-  levelCount: number = 0;
+  levelCount: number = getLevel();
   tickInterval: any;
 
   constructor() {
     this.inputs = new Inputs()
-    this.level = new Level(levelArgs[this.levelCount], this.inputs, this);
+    this.level = new Level(args[this.levelCount], this.inputs, this);
+    this.tickInterval = setInterval(() => this.update(), 1000/UPS);
   }
 
-  changeLevel() {
-    this.levelCount += 1
+  update() {
+    this.inputs.update();
 
-    if (this.levelCount >= levelArgs.length) {
-      requestAnimationFrame(() => this.level.screen.victory());
+    if (this.inputs.pressed.includes('p')) {
+      this.level.pause();
+    }
+
+    if (!this.level.running) {
       return;
     }
 
-    this.level = new Level(levelArgs[this.levelCount], this.inputs, this);
+    this.level.update(this.inputs);
+  }
+
+  nextLevel() {
+    this.changeLevel(this.levelCount + 1)
+  }
+
+  changeLevel(level: number) {
+    this.levelCount = level;
+    this.level.tearDown();
+
+    if (this.levelCount >= args.length) {
+      requestAnimationFrame(() => this.level.screen.victory());
+      setLevel(0);
+      return;
+    }
+
+    setLevel(this.levelCount);
+    this.level = new Level(args[this.levelCount], this.inputs, this);
   }
 }
 

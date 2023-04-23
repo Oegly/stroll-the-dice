@@ -1,5 +1,5 @@
 export default class Inputs {
-  legal: string[] = ['w', 'a', 's', 'd', ' '];
+  legal: string[] = ['w', 'a', 's', 'd', ' ', 'p'];
   pressed: string[] = [];
   down: string[] = [];
   up: string[] = [];

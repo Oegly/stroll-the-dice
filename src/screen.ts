@@ -4,6 +4,8 @@ import { Player } from './player';
 import { a_star, PathNode } from './path';
 import { Torch } from './torch';
 import { PropertyMatrix } from './utils/propertymatrix';
+import { PauseMenu } from './widgets';
+import { Game } from './index';
 
 const BG_CTX = (<HTMLCanvasElement> document.getElementById('background')).getContext('2d') 
 const CTX = (<HTMLCanvasElement> document.getElementById('canvas')).getContext('2d');
@@ -20,22 +22,28 @@ const OFFSET_Y = 0;
 export class Screen {
   fps: number;
   frameCount: number = 0;
+  running: boolean = true;
   player: PlayerSprite;
   torches: TorchSprite[] = [];
   lightMatrix: PropertyMatrix<number>;
   mobs: MobSprite[] = [];
   path: PathNode;
+  pauseMenu: PauseMenu;
 
-  constructor(player: Player, maze: Maze, goal: Point, fps: number) {
+  constructor(game: Game, player: Player, maze: Maze, goal: Point, fps: number) {
     this.fps = fps;
     this.player = new PlayerSprite(player);
     this.drawMaze(maze, goal);
     [1, 2, 3, 4, 5, 6].forEach(n => this.drawDice(n, true));
-
-    this.path = a_star(maze, {x: 0, y: 0}, goal).reverse()
+    this.pauseMenu = new PauseMenu(game, CTX);
+    this.path = a_star(maze, {x: 0, y: 0}, goal).reverse();
   }
 
   render() {
+    if (!this.running) {
+      return;
+    }
+
     this.frameCount++;
 
     this.clear();
@@ -46,6 +54,26 @@ export class Screen {
     this.drawTorches();
   }
   
+  setState(running: boolean) {
+    this.running = running;
+
+    if (this.running) {
+      this.pauseMenu.deactivate();
+      return;
+    }
+
+    CTX.save();
+    CTX.globalAlpha = 0.2;
+    CTX.fillStyle = "#000";
+
+    CTX.fillRect(0, 0, BG_CTX.canvas.width, BG_CTX.canvas.height);
+
+    CTX.restore();
+
+    this.pauseMenu.activate();
+    this.pauseMenu.draw();
+  }
+
   updateSprites(
     player: Player, torches: Torch[],
     mobs: Mob[], lightMatrix: PropertyMatrix<number>
